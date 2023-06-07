@@ -1,11 +1,13 @@
 import { Router } from "express";
 import PatientController from "../controllers/patientController.js";
 import authenticateMedic from "../middlewares/authenticateMedic.js";
+import authenticatePatient from "../middlewares/authenticatePatient.js";
 
 const router = Router();
 
 router.get("/patient", PatientController.find);
 router.get("/patient/:id", PatientController.findById);
+router.put("/patient/:id", authenticatePatient, PatientController.update);
 router.post("/patient/login", PatientController.login);
 router.post("/patient/register", PatientController.register);
 router.post("/patient/logout", PatientController.logout);
