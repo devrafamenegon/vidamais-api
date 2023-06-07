@@ -1,5 +1,5 @@
 import { verify } from "jsonwebtoken";
-import blacklistedToken from "../models/blacklist.js";
+import blacklistSchema from "../models/blacklist.js";
 import patientSchema from "../models/patient.js";
 
 // Middleware de autenticação de pacientes
@@ -8,9 +8,9 @@ export default async function authenticatePatient(req, res, next) {
     const token = req.headers.authorization.split(" ")[1];
 
     // Verifique se o token está na lista negra
-    const isTokenBlacklisted = await blacklistedToken.find({ token });
+    const isTokenBlacklisted = await blacklistSchema.find({ token });
 
-    if (isTokenBlacklisted) {
+    if (isTokenBlacklisted.length > 0) {
       return res.status(401).json({ error: "Invalid token" });
     }
 
