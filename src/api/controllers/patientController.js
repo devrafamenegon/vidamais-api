@@ -1,18 +1,19 @@
-import PatientService from "../services/patientService.js";
+import patientService from "../services/patientService.js";
 import {
   PatientNotFoundError,
   MedicineNotFoundError,
   OnlyDoctorsError,
-  InvalidCredentialsError,
   EmailCPFExistsError,
 } from "../errors/patientErrors.js";
 
+import { InvalidCredentialsError } from "../errors/index.js";
+
 class PatientController {
-  static registerPatient = async (req, res) => {
+  static register = async (req, res) => {
     const { name, email, cpf, password } = req.body;
 
     try {
-      await PatientService.registerPatient(name, email, cpf, password);
+      await patientService.register(name, email, cpf, password);
       res.status(200).json({ message: "Patient successfully registered" });
     } catch (err) {
       if (err instanceof EmailCPFExistsError) {
@@ -25,11 +26,11 @@ class PatientController {
     }
   };
 
-  static loginPatient = async (req, res) => {
+  static login = async (req, res) => {
     const { email, password } = req.body;
 
     try {
-      const token = await PatientService.loginPatient(email, password);
+      const token = await patientService.login(email, password);
       res.status(200).json({ token });
     } catch (err) {
       if (
@@ -43,20 +44,20 @@ class PatientController {
     }
   };
 
-  static logoutPatient = async (req, res) => {
+  static logout = async (req, res) => {
     try {
       const { token } = req.body;
 
-      await PatientService.logoutPatient(token);
+      await patientService.logout(token);
       res.status(200).json({ message: "Token added to blacklist" });
     } catch (err) {
       res.status(500).json({ error: "Failed to add token to blacklist" });
     }
   };
 
-  static findPatient = async (req, res) => {
+  static find = async (req, res) => {
     try {
-      const patients = await PatientService.findPatient();
+      const patients = await patientService.find();
       res.status(200).json(patients);
     } catch (err) {
       res
@@ -65,10 +66,10 @@ class PatientController {
     }
   };
 
-  static findPatientById = async (req, res) => {
+  static findById = async (req, res) => {
     try {
       const id = req.params.id;
-      const patient = await PatientService.findPatientById(id);
+      const patient = await patientService.findById(id);
       if (patient) {
         res.status(200).json(patient);
       } else {
@@ -83,10 +84,10 @@ class PatientController {
     }
   };
 
-  static deletePatient = async (req, res) => {
+  static delete = async (req, res) => {
     try {
       const id = req.params.id;
-      await PatientService.deletePatient(id);
+      await patientService.delete(id);
       res.status(200).json({ message: "Patient removed successfully" });
     } catch (err) {
       res.status(500).json({ message: err.message });
@@ -99,7 +100,7 @@ class PatientController {
       const { name, hour, qtd, type, startDate, endDate, frequency } = req.body;
       const { isMedic, userId } = req;
 
-      await PatientService.addMedicine(
+      await patientService.addMedicine(
         patientId,
         name,
         hour,
@@ -132,7 +133,7 @@ class PatientController {
       const { name, hour, qtd, type, startDate, endDate, frequency } = req.body;
       const { isMedic, userId } = req;
 
-      await PatientService.updateMedicine(
+      await patientService.updateMedicine(
         patientId,
         medicineId,
         name,
@@ -165,7 +166,7 @@ class PatientController {
       const medicineId = req.params.medicineId;
       const { isMedic, userId } = req;
 
-      await PatientService.deleteMedicine(
+      await patientService.deleteMedicine(
         patientId,
         medicineId,
         userId,
@@ -190,7 +191,7 @@ class PatientController {
       const medicineId = req.params.medicineId;
       const { isMedic } = req;
 
-      const medicine = await PatientService.findMedicineById(
+      const medicine = await patientService.findMedicineById(
         patientId,
         medicineId,
         isMedic
@@ -218,7 +219,7 @@ class PatientController {
       const patientId = req.params.patientId;
       const { isMedic } = req;
 
-      const medicines = await PatientService.findAllMedicines(
+      const medicines = await patientService.findAllMedicines(
         patientId,
         isMedic
       );

@@ -6,12 +6,13 @@ import {
   PatientNotFoundError,
   MedicineNotFoundError,
   OnlyDoctorsError,
-  InvalidCredentialsError,
   EmailCPFExistsError,
 } from "../errors/patientErrors.js";
 
+import { InvalidCredentialsError } from "../errors/index.js";
+
 class PatientService {
-  static async registerPatient(name, email, cpf, password) {
+  static async register(name, email, cpf, password) {
     const existingPaciente = await patientSchema.findOne({
       $or: [{ email }, { cpf }],
     });
@@ -30,7 +31,7 @@ class PatientService {
     await newPatient.save();
   }
 
-  static async loginPatient(email, password) {
+  static async login(email, password) {
     const patient = await patientSchema.findOne({ email });
     if (!patient) {
       throw new PatientNotFoundError();
@@ -46,18 +47,18 @@ class PatientService {
     return token;
   }
 
-  static async logoutPatient(token) {
+  static async logout(token) {
     const blacklistedToken = new blacklistSchema({ token });
 
     await blacklistedToken.save();
   }
 
-  static async findPatient() {
+  static async find() {
     const patients = await patientSchema.find({});
     return patients;
   }
 
-  static async findPatientById(id) {
+  static async findById(id) {
     const patient = await patientSchema.findById(id);
     if (!patient) {
       throw new PatientNotFoundError();
@@ -65,7 +66,7 @@ class PatientService {
     return patient;
   }
 
-  static async deletePatient(id) {
+  static async delete(id) {
     await patientSchema.findByIdAndDelete(id);
   }
 
