@@ -4,12 +4,12 @@ import authenticateMedic from "../middlewares/authenticateMedic.js";
 
 const router = Router();
 
-router.get("/patient", PatientController.findPatient);
-router.get("/patient/:id", PatientController.findPatientById);
-router.post("/patient/login", PatientController.loginPatient);
-router.post("/patient/register", PatientController.registerPatient);
-router.post("/patient/logout", PatientController.logoutPatient);
-router.delete("/patient/:id", PatientController.deletePatient);
+router.get("/patient", PatientController.find);
+router.get("/patient/:id", PatientController.findById);
+router.post("/patient/login", PatientController.login);
+router.post("/patient/register", PatientController.register);
+router.post("/patient/logout", PatientController.logout);
+router.delete("/patient/:id", PatientController.delete);
 
 // Rotas para manipulação de medicamentos
 router.post(
