@@ -9,10 +9,14 @@ import {
   EmailCPFExistsError,
 } from "../errors/patientErrors.js";
 
-import { InvalidCredentialsError } from "../errors/index.js";
+import {
+  InvalidCredentialsError,
+  OldPasswordNotInformedError,
+  UnauthorizedAccessError,
+} from "../errors/index.js";
 
 class PatientService {
-  static async register(name, email, cpf, password) {
+  static async register(name, cpf, birthdate, email, password) {
     const existingPaciente = await patientSchema.findOne({
       $or: [{ email }, { cpf }],
     });
@@ -24,8 +28,9 @@ class PatientService {
 
     const newPatient = new patientSchema({
       name,
-      email,
       cpf,
+      birthdate,
+      email,
       password: hashedPassword,
     });
     await newPatient.save();
@@ -54,8 +59,7 @@ class PatientService {
   }
 
   static async find() {
-    const patients = await patientSchema.find({});
-    return patients;
+    return await patientSchema.find({});
   }
 
   static async findById(id) {
@@ -66,7 +70,61 @@ class PatientService {
     return patient;
   }
 
+  static async update(
+    id,
+    name,
+    email,
+    oldPassword,
+    newPassword,
+    isPatient,
+    userId
+  ) {
+    if (!isPatient || id !== userId) {
+      throw new UnauthorizedAccessError();
+    }
+
+    const patient = await patientSchema.findById(id);
+    if (!patient) {
+      throw new PatientNotFoundError();
+    }
+
+    if (name) {
+      patient.name = name;
+    }
+
+    if (email) {
+      const checkEmailAvailability = await patientSchema.find({ email });
+
+      if (checkEmailAvailability.length > 0) {
+        throw new EmailCPFExistsError();
+      }
+
+      patient.email = email;
+    }
+
+    if (newPassword) {
+      if (!oldPassword) {
+        throw new OldPasswordNotInformedError();
+      }
+
+      const passwordMatch = await bcrypt.compare(oldPassword, patient.password);
+      if (!passwordMatch) {
+        throw new InvalidCredentialsError();
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      patient.password = hashedPassword;
+    }
+
+    await patient.save();
+  }
+
   static async delete(id) {
+    const patient = await patientSchema.findById(id);
+    if (!patient) {
+      throw new PatientNotFoundError();
+    }
+
     await patientSchema.findByIdAndDelete(id);
   }
 

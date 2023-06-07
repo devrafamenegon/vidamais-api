@@ -6,14 +6,17 @@ import {
   EmailCPFExistsError,
 } from "../errors/patientErrors.js";
 
-import { InvalidCredentialsError } from "../errors/index.js";
+import {
+  InvalidCredentialsError,
+  UnauthorizedAccessError,
+} from "../errors/index.js";
 
 class PatientController {
   static register = async (req, res) => {
-    const { name, email, cpf, password } = req.body;
+    const { name, cpf, birthdate, email, password } = req.body;
 
     try {
-      await patientService.register(name, email, cpf, password);
+      await patientService.register(name, cpf, birthdate, email, password);
       res.status(200).json({ message: "Patient successfully registered" });
     } catch (err) {
       if (err instanceof EmailCPFExistsError) {
@@ -21,7 +24,7 @@ class PatientController {
       } else {
         res
           .status(500)
-          .json({ message: `${err.message} - Fail to create patient` });
+          .json({ error: `${err.message} - Failed to register patient` });
       }
     }
   };
@@ -39,7 +42,9 @@ class PatientController {
       ) {
         res.status(401).json({ error: "Invalid credentials" });
       } else {
-        res.status(500).json({ message: `${err.message} - Error to login` });
+        res
+          .status(500)
+          .json({ error: `${err.message} - Failed to login patient` });
       }
     }
   };
@@ -51,7 +56,9 @@ class PatientController {
       await patientService.logout(token);
       res.status(200).json({ message: "Token added to blacklist" });
     } catch (err) {
-      res.status(500).json({ error: "Failed to add token to blacklist" });
+      res
+        .status(500)
+        .json({ error: `${err.message} - Failed to add token to blacklist` });
     }
   };
 
@@ -62,7 +69,7 @@ class PatientController {
     } catch (err) {
       res
         .status(500)
-        .json({ message: `${err.message} - Fail to find patient` });
+        .json({ error: `${err.message} - Failed to find patients` });
     }
   };
 
@@ -70,16 +77,45 @@ class PatientController {
     try {
       const id = req.params.id;
       const patient = await patientService.findById(id);
-      if (patient) {
-        res.status(200).json(patient);
-      } else {
-        res.status(400).json({ message: "Patient not found" });
-      }
+      res.status(200).json(patient);
     } catch (err) {
       if (err instanceof PatientNotFoundError) {
-        res.status(500).json({ message: `${err.message} - Patient not found` });
+        res.status(404).json({ error: "Patient not found" });
       } else {
-        res.status(500).json({ message: err.message });
+        res
+          .status(500)
+          .json({ error: `${err.message} - Failed to find patient by id` });
+      }
+    }
+  };
+
+  static update = async (req, res) => {
+    try {
+      const id = req.params.id;
+      const { name, email, oldPassword, newPassword } = req.body;
+      const { isPatient, userId } = req;
+
+      await patientService.update(
+        id,
+        name,
+        email,
+        oldPassword,
+        newPassword,
+        isPatient,
+        userId
+      );
+      res.status(200).json({ message: "Patient updated successfully" });
+    } catch (err) {
+      if (err instanceof PatientNotFoundError) {
+        res.status(404).json({ error: "Patient not found" });
+      } else if (err instanceof EmailCPFExistsError) {
+        res.status(400).json({ error: "Email already registered" });
+      } else if (err instanceof UnauthorizedAccessError) {
+        res.status(400).json({ error: "Unauthorized" });
+      } else {
+        res
+          .status(500)
+          .json({ error: `${err.message} - Failed to update patient` });
       }
     }
   };
@@ -88,9 +124,15 @@ class PatientController {
     try {
       const id = req.params.id;
       await patientService.delete(id);
-      res.status(200).json({ message: "Patient removed successfully" });
+      res.status(201).json({ message: "Patient removed successfully" });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      if (err instanceof PatientNotFoundError) {
+        res.status(404).json({ error: "Patient not found" });
+      } else {
+        res
+          .status(500)
+          .json({ error: `${err.message} - Failed to delete patient` });
+      }
     }
   };
 
@@ -121,7 +163,9 @@ class PatientController {
       ) {
         res.status(401).json({ error: "Unauthorized" });
       } else {
-        res.status(500).json({ message: err.message });
+        res
+          .status(500)
+          .json({ error: `${err.message} - Failed to add medicine` });
       }
     }
   };
@@ -155,7 +199,9 @@ class PatientController {
       ) {
         res.status(404).json({ error: "Patient or Medicine not found" });
       } else {
-        res.status(500).json({ message: err.message });
+        res
+          .status(500)
+          .json({ error: `${err.message} - Failed to update medicine` });
       }
     }
   };
@@ -180,7 +226,9 @@ class PatientController {
       ) {
         res.status(404).json({ error: "Patient or Medicine not found" });
       } else {
-        res.status(500).json({ message: err.message });
+        res
+          .status(500)
+          .json({ error: `${err.message} - Failed to delete medicine` });
       }
     }
   };
@@ -197,11 +245,7 @@ class PatientController {
         isMedic
       );
 
-      if (medicine) {
-        res.status(200).json(medicine);
-      } else {
-        res.status(404).json({ message: "Medicine not found" });
-      }
+      res.status(200).json(medicine);
     } catch (err) {
       if (
         err instanceof PatientNotFoundError ||
@@ -209,7 +253,9 @@ class PatientController {
       ) {
         res.status(404).json({ error: "Patient or Medicine not found" });
       } else {
-        res.status(500).json({ message: err.message });
+        res
+          .status(500)
+          .json({ error: `${err.message} - Failed to find medicine by id` });
       }
     }
   };
@@ -229,7 +275,9 @@ class PatientController {
       if (err instanceof PatientNotFoundError) {
         res.status(404).json({ error: "Patient not found" });
       } else {
-        res.status(500).json({ message: err.message });
+        res
+          .status(500)
+          .json({ error: `${err.message} - Failed to find medicines` });
       }
     }
   };
