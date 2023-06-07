@@ -2,13 +2,19 @@ import medicSchema from "../models/medic.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
-class MedicService {
-  static async findMedicByEmailOrCRM(email, crm) {
-    return medicSchema.findOne({ $or: [{ email }, { crm }] });
-  }
+import { EmailCRMExistsError } from "../errors/medicErrors.js";
 
-  static async createMedic(name, email, crm, password) {
+class MedicService {
+  static async register(name, email, crm, password) {
+    const existingMedic = await medicSchema.findOne({
+      $or: [{ email }, { crm }],
+    });
+    if (existingMedic) {
+      throw new EmailCRMExistsError();
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
+
     const newMedic = new medicSchema({
       name,
       email,
@@ -18,28 +24,41 @@ class MedicService {
     await newMedic.save();
   }
 
-  static async findMedicByEmail(email) {
-    return medicSchema.findOne({ email });
+  static async login(email, password) {
+    const medic = await medicSchema.findOne({ email });
+    if (!medic) {
+      throw new MedicNotFoundError();
+    }
+
+    const passwordMatch = await bcrypt.compare(password, medic.password);
+    if (!passwordMatch) {
+      throw new InvalidCredentialsError();
+    }
+
+    const token = jwt.sign({ userId: medic._id }, process.env.JWT_SECRET);
+
+    return token;
   }
 
-  static async comparePassword(password, hashedPassword) {
-    return bcrypt.compare(password, hashedPassword);
+  static async find() {
+    return await medicSchema.find({});
   }
 
-  static generateToken(userId) {
-    return jwt.sign({ userId }, process.env.JWT_SECRET);
+  static async findById(id) {
+    const medic = await medicSchema.findById(id);
+    if (!medic) {
+      throw new MedicNotFoundError();
+    }
+    return medic;
   }
 
-  static async findAllMedics() {
-    return medicSchema.find({});
-  }
+  static async delete(id) {
+    const medic = await medicSchema.findById(id);
+    if (!medic) {
+      throw new MedicNotFoundError();
+    }
 
-  static async findMedicById(id) {
-    return medicSchema.findById(id);
-  }
-
-  static async deleteMedic(id) {
-    await medicSchema.findByIdAndDelete(id);
+    await patientSchema.deleteOne(id);
   }
 }
 

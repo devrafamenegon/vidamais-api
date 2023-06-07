@@ -1,19 +1,26 @@
 import medicService from "../services/medicService.js";
 
+import {
+  EmailCRMExistsError,
+  MedicNotFoundError,
+} from "../errors/medicErrors.js";
+
+import { InvalidCredentialsError } from "../errors/index.js";
+
 class MedicController {
   static register = async (req, res) => {
     const { name, email, crm, password } = req.body;
 
     try {
-      await patientService.register(name, email, crm, password);
-      res.status(200).json({ message: "Patient successfully registered" });
+      await medicService.register(name, email, crm, password);
+      res.status(200).json({ message: "Medic successfully registered" });
     } catch (err) {
       if (err instanceof EmailCRMExistsError) {
         res.status(400).json({ error: "Email or CRM already registered" });
       } else {
         res
           .status(500)
-          .json({ message: `${err.message} - Fail to create patient` });
+          .json({ error: `${err.message} - Failed to register medic` });
       }
     }
   };
@@ -22,50 +29,55 @@ class MedicController {
     const { email, password } = req.body;
 
     try {
-      const medic = await medicService.findMedicByEmail(email);
-      if (!medic) {
-        return res.status(401).json({ error: "User not found" });
-      }
-
-      const passwordMatch = await medicService.comparePassword(
-        password,
-        medic.password
-      );
-      if (!passwordMatch) {
-        return res.status(401).json({ error: "Invalid credentials" });
-      }
-
-      const token = medicService.generateToken(medic._id);
-
+      const token = await medicService.login(email, password);
       res.status(200).json({ token });
     } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: `${err.message} - Error during login` });
+      if (
+        err instanceof MedicNotFoundError ||
+        err instanceof InvalidCredentialsError
+      ) {
+        res.status(401).json({ error: "Invalid credentials" });
+      } else {
+        res
+          .status(500)
+          .json({ error: `${err.message} - Failed to login medic` });
+      }
+    }
+  };
+
+  static logout = async (req, res) => {
+    try {
+      const { token } = req.body;
+
+      await medicService.logout(token);
+      res.status(200).json({ message: "Token added to blacklist" });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to add token to blacklist" });
     }
   };
 
   static find = async (req, res) => {
     try {
-      const medics = await medicService.findAllMedics();
+      const medics = await medicService.find();
       res.status(200).json(medics);
     } catch (err) {
-      res
-        .status(500)
-        .json({ message: `${err.message} - Failed to find medics` });
+      res.status(500).json({ error: `${err.message} - Failed to find medics` });
     }
   };
 
   static findById = async (req, res) => {
     try {
       const id = req.params.id;
-      const medic = await medicService.findMedicById(id);
-      if (medic) {
-        res.status(200).json(medic);
-      } else {
-        res.status(400).json({ message: "Medic not found" });
-      }
+      const medic = await medicService.findById(id);
+      res.status(200).json(medic);
     } catch (err) {
-      res.status(400).json({ message: `${err.message} - Medic not found` });
+      if (err instanceof MedicNotFoundError) {
+        res.status(404).json({ error: "Medic not found" });
+      } else {
+        res
+          .status(500)
+          .json({ error: `${err.message} - Failed to find medic by id` });
+      }
     }
   };
 
@@ -75,7 +87,13 @@ class MedicController {
       await medicService.deleteMedic(id);
       res.status(200).json({ message: "Medic removed successfully" });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      if (err instanceof MedicNotFoundError) {
+        res.status(404).json({ error: "Medic not found" });
+      } else {
+        res
+          .status(500)
+          .json({ error: `${err.message} - Failed to delete medic` });
+      }
     }
   };
 }
