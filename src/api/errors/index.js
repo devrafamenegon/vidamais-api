@@ -12,4 +12,15 @@ class UnauthorizedAccessError extends Error {
   }
 }
 
-export { InvalidCredentialsError, UnauthorizedAccessError };
+class OldPasswordNotInformedError extends Error {
+  constructor() {
+    super("Old Password Not Informed");
+    this.name = "OldPasswordNotInformedError";
+  }
+}
+
+export {
+  InvalidCredentialsError,
+  UnauthorizedAccessError,
+  OldPasswordNotInformedError,
+};
