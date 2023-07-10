@@ -15,7 +15,14 @@ class MedicineNotFoundError extends Error {
 class OnlyMedicsError extends Error {
   constructor() {
     super("Only medics can perform this action");
-    this.name = "OnlymedicsError";
+    this.name = "OnlyMedicsError";
+  }
+}
+
+class OnlyMedicsOrOwnPatientError extends Error {
+  constructor() {
+    super("Only medics or own patient can perform this action");
+    this.name = "OnlyMedicsOrOwnPatientError";
   }
 }
 
@@ -29,6 +36,7 @@ class EmailCPFExistsError extends Error {
 export {
   PatientNotFoundError,
   MedicineNotFoundError,
-  OnlyMedicsError as OnlyDoctorsError,
+  OnlyMedicsError,
   EmailCPFExistsError,
+  OnlyMedicsOrOwnPatientError,
 };
