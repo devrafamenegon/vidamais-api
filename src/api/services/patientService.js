@@ -5,8 +5,9 @@ import jwt from "jsonwebtoken";
 import {
   PatientNotFoundError,
   MedicineNotFoundError,
-  OnlyDoctorsError,
+  OnlyMedicsError,
   EmailCPFExistsError,
+  OnlyMedicsOrOwnPatientError,
 } from "../errors/patientErrors.js";
 
 import {
@@ -146,7 +147,7 @@ class PatientService {
     }
 
     if (!isMedic) {
-      throw new OnlyDoctorsError();
+      throw new OnlyMedicsError();
     }
 
     const medicine = {
@@ -191,7 +192,7 @@ class PatientService {
     }
 
     if (!isMedic || patient.medicines[medicineIndex].doctorId !== userId) {
-      throw new OnlyDoctorsError();
+      throw new OnlyMedicsError();
     }
 
     const updatedMedicine = {
@@ -224,7 +225,7 @@ class PatientService {
     }
 
     if (!isMedic || patient.medicines[medicineIndex].doctorId !== userId) {
-      throw new OnlyDoctorsError();
+      throw new OnlyMedicsError();
     }
 
     patient.medicines.splice(medicineIndex, 1);
@@ -246,20 +247,20 @@ class PatientService {
     }
 
     if (!isMedic) {
-      throw new OnlyDoctorsError();
+      throw new OnlyMedicsError();
     }
 
     return medicine;
   }
 
-  static async findAllMedicines(patientId, isMedic) {
+  static async findAllMedicines(patientId, isMedic, isOwnPatient) {
     const patient = await patientSchema.findById(patientId);
     if (!patient) {
       throw new PatientNotFoundError();
     }
 
-    if (!isMedic) {
-      throw new OnlyDoctorsError();
+    if (!isMedic && !isOwnPatient) {
+      throw new OnlyMedicsOrOwnPatientError();
     }
 
     return patient.medicines;

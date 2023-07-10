@@ -2,7 +2,7 @@ import patientService from "../services/patientService.js";
 import {
   PatientNotFoundError,
   MedicineNotFoundError,
-  OnlyDoctorsError,
+  OnlyMedicsError,
   EmailCPFExistsError,
 } from "../errors/patientErrors.js";
 
@@ -159,7 +159,7 @@ class PatientController {
     } catch (err) {
       if (
         err instanceof PatientNotFoundError ||
-        err instanceof OnlyDoctorsError
+        err instanceof OnlyMedicsError
       ) {
         res.status(401).json({ error: "Unauthorized" });
       } else {
@@ -263,11 +263,12 @@ class PatientController {
   static findAllMedicines = async (req, res) => {
     try {
       const patientId = req.params.patientId;
-      const { isMedic } = req;
+      const { isMedic, isOwnPatient } = req;
 
       const medicines = await patientService.findAllMedicines(
         patientId,
-        isMedic
+        isMedic,
+        isOwnPatient
       );
 
       res.status(200).json(medicines);

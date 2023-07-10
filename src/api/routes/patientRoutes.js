@@ -1,17 +1,29 @@
 import { Router } from "express";
 import PatientController from "../controllers/patientController.js";
 import authenticateMedic from "../middlewares/authenticateMedic.js";
-import authenticatePatient from "../middlewares/authenticatePatient.js";
+import authenticateMedicOrOwnPatient from "../middlewares/authenticateMedicOrOwnPatient.js";
 
 const router = Router();
 
-router.get("/patient", PatientController.find);
-router.get("/patient/:id", PatientController.findById);
-router.put("/patient/:id", authenticatePatient, PatientController.update);
+router.get("/patient", authenticateMedic, PatientController.find);
+router.get(
+  "/patient/:id",
+  authenticateMedicOrOwnPatient,
+  PatientController.findById
+);
+router.put(
+  "/patient/:id",
+  authenticateMedicOrOwnPatient,
+  PatientController.update
+);
 router.post("/patient/login", PatientController.login);
 router.post("/patient/register", PatientController.register);
 router.post("/patient/logout", PatientController.logout);
-router.delete("/patient/:id", PatientController.delete);
+router.delete(
+  "/patient/:id",
+  authenticateMedicOrOwnPatient,
+  PatientController.delete
+);
 
 // Rotas para manipulação de medicamentos
 router.post(
@@ -26,12 +38,12 @@ router.put(
 );
 router.get(
   "/patient/:patientId/medicine",
-  authenticateMedic,
+  authenticateMedicOrOwnPatient,
   PatientController.findAllMedicines
 );
 router.get(
   "/patient/:patientId/medicine/:medicineId",
-  authenticateMedic,
+  authenticateMedicOrOwnPatient,
   PatientController.findMedicineById
 );
 router.delete(
